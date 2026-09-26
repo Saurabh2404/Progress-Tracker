@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sprintSeeds, taskSeeds } from "./catalog/index.js";
+import { sprintOneDayTwo, sprintSeeds, taskSeeds } from "./catalog/index.js";
 
 test("catalog contains the eight Planly sprints", () => {
   assert.equal(sprintSeeds.length, 8);
@@ -16,6 +16,14 @@ test("Sprint 1 Day 1 matches the captured schedule", () => {
   assert.equal(
     tasks.reduce((total, task) => total + task.estimatedMinutes, 0),
     347,
+  );
+});
+
+test("Sprint 1 Day 2 matches the captured schedule", () => {
+  assert.equal(sprintOneDayTwo.length, 15);
+  assert.equal(
+    sprintOneDayTwo.reduce((total, task) => total + task.estimatedMinutes, 0),
+    327,
   );
 });
 

@@ -1,2 +1,6 @@
+import { sprintOneDayOne } from "./sprint1Day1.js";
+import { sprintOneDayTwo } from "./sprint1Day2.js";
+
+export { sprintOneDayTwo } from "./sprint1Day2.js";
 export { sprintSeeds } from "./sprints.js";
-export { sprintOneDayOne as taskSeeds } from "./sprint1Day1.js";
+export const taskSeeds = [...sprintOneDayOne, ...sprintOneDayTwo];
