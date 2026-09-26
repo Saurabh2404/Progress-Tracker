@@ -26,7 +26,7 @@ export const taskInput = z.object({
   date: dateString,
   dayNumber: z.coerce.number().int().min(1).max(365).default(1),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).default("Medium"),
-  estimatedMinutes: z.coerce.number().int().min(5).max(480).default(45),
+  estimatedMinutes: z.coerce.number().int().min(1).max(480).default(45),
   timeSpentSeconds: z.coerce.number().int().min(0).default(0),
 });
 
@@ -36,7 +36,7 @@ export const taskPatch = z.object({
   date: dateString.optional(),
   dayNumber: z.coerce.number().int().min(1).max(365).optional(),
   difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
-  estimatedMinutes: z.coerce.number().int().min(5).max(480).optional(),
+  estimatedMinutes: z.coerce.number().int().min(1).max(480).optional(),
   timeSpentSeconds: z.coerce.number().int().min(0).optional(),
   completed: z.boolean().optional(),
 });

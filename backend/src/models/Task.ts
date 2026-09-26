@@ -9,7 +9,7 @@ const taskSchema = new Schema(
     date: { type: Date, required: true, index: true },
     dayNumber: { type: Number, min: 1, default: 1, index: true },
     difficulty: { type: String, enum: ["Easy", "Medium", "Hard"], default: "Medium" },
-    estimatedMinutes: { type: Number, min: 5, max: 480, default: 45 },
+    estimatedMinutes: { type: Number, min: 1, max: 480, default: 45 },
     timeSpentSeconds: { type: Number, min: 0, default: 0 },
     completed: { type: Boolean, default: false, index: true },
     completedAt: { type: Date, default: null },
