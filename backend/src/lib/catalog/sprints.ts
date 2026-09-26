@@ -1,0 +1,70 @@
+import { planDate } from "./date.js";
+import type { SprintSeed } from "./types.js";
+
+export const sprintSeeds: SprintSeed[] = [
+  {
+    name: "Sprint 1",
+    goal: "Current Planly sprint",
+    startDate: planDate(9, 26),
+    endDate: planDate(10, 2),
+    color: "#2f6f65",
+    estimatedMinutes: 1493,
+    timeSpentSeconds: 709,
+  },
+  {
+    name: "Sprint 2",
+    goal: "Upcoming Planly sprint",
+    startDate: planDate(10, 3),
+    endDate: planDate(10, 9),
+    color: "#3977c9",
+    estimatedMinutes: 1545,
+  },
+  {
+    name: "Sprint 3",
+    goal: "Upcoming Planly sprint",
+    startDate: planDate(10, 10),
+    endDate: planDate(10, 16),
+    color: "#8d62b5",
+    estimatedMinutes: 1479,
+  },
+  {
+    name: "Sprint 4",
+    goal: "Upcoming Planly sprint",
+    startDate: planDate(10, 17),
+    endDate: planDate(10, 19),
+    color: "#d36b3f",
+    estimatedMinutes: 414,
+  },
+  {
+    name: "Sprint 5",
+    goal: "Upcoming Planly sprint",
+    startDate: planDate(10, 20),
+    endDate: planDate(10, 26),
+    color: "#2f7d96",
+    estimatedMinutes: 1472,
+  },
+  {
+    name: "Sprint 6",
+    goal: "Upcoming Planly sprint",
+    startDate: planDate(10, 27),
+    endDate: planDate(11, 2),
+    color: "#9b6b39",
+    estimatedMinutes: 1518,
+  },
+  {
+    name: "Sprint 7",
+    goal: "Upcoming Planly sprint",
+    startDate: planDate(11, 3),
+    endDate: planDate(11, 9),
+    color: "#56704c",
+    estimatedMinutes: 1455,
+  },
+  {
+    name: "Sprint 8",
+    goal: "Final Planly sprint",
+    startDate: planDate(11, 10),
+    endDate: planDate(11, 16),
+    color: "#bd5265",
+    estimatedMinutes: 855,
+  },
+];
