@@ -726,7 +726,22 @@ function TasksView({
   removeTask: (id: string) => void;
 }) {
   const [filter, setFilter] = useState<"all" | "open" | "done">("all");
-  const visible = tasks.filter((task) => filter === "all" || (filter === "done" ? task.completed : !task.completed));
+  const [sprintFilter, setSprintFilter] = useState("all");
+  const [dayFilter, setDayFilter] = useState("all");
+  const sprintOptions = Array.from(new Map(tasks.map((task) => [task.sprintId._id, task.sprintId])).values());
+  const dayOptions = Array.from(
+    new Set(
+      tasks
+        .filter((task) => sprintFilter === "all" || task.sprintId._id === sprintFilter)
+        .map((task) => task.dayNumber ?? 1),
+    ),
+  ).sort((a, b) => a - b);
+  const visible = tasks.filter(
+    (task) =>
+      (sprintFilter === "all" || task.sprintId._id === sprintFilter) &&
+      (dayFilter === "all" || String(task.dayNumber ?? 1) === dayFilter) &&
+      (filter === "all" || (filter === "done" ? task.completed : !task.completed)),
+  );
   return (
     <div className="px-4 py-[22px] pb-10 md:px-[clamp(24px,4vw,58px)] md:py-[30px] md:pb-[54px]">
       <div className="mb-[22px] flex items-end justify-between gap-[18px]">
@@ -740,11 +755,41 @@ function TasksView({
               className={`min-h-[34px] rounded-md border-0 px-3 capitalize ${filter === item ? "bg-[#245e55] text-white" : "bg-transparent text-[#64716d]"}`}
               key={item}
               onClick={() => setFilter(item)}
+              aria-pressed={filter === item}
             >
               {item}
             </button>
           ))}
         </div>
+      </div>
+      <div className="mb-5 grid gap-3 sm:grid-cols-2">
+        <Field label="Sprint">
+          <select
+            className={field}
+            value={sprintFilter}
+            onChange={(event) => {
+              setSprintFilter(event.target.value);
+              setDayFilter("all");
+            }}
+          >
+            <option value="all">All sprints</option>
+            {sprintOptions.map((sprint) => (
+              <option key={sprint._id} value={sprint._id}>
+                {sprint.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Day">
+          <select className={field} value={dayFilter} onChange={(event) => setDayFilter(event.target.value)}>
+            <option value="all">All days</option>
+            {dayOptions.map((day) => (
+              <option key={day} value={day}>
+                Day {day}
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
       <section className={`${panel} px-[18px] py-0 md:px-6`}>
         {visible.length ? (

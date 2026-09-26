@@ -8,4 +8,12 @@ import { sprintOneDay4 } from "./sprint1Day4.js";
 import { sprintOneDay5 } from "./sprint1Day5.js";
 import { sprintOneDay6 } from "./sprint1Day6.js";
 import { sprintOneDay7 } from "./sprint1Day7.js";
-export const taskSeeds = [...sprintOneDayOne, ...sprintOneDayTwo, ...sprintOneDay3, ...sprintOneDay4, ...sprintOneDay5, ...sprintOneDay6, ...sprintOneDay7];
+export const taskSeeds = [
+  ...sprintOneDayOne,
+  ...sprintOneDayTwo,
+  ...sprintOneDay3,
+  ...sprintOneDay4,
+  ...sprintOneDay5,
+  ...sprintOneDay6,
+  ...sprintOneDay7,
+];

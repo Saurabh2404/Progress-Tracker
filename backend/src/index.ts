@@ -18,6 +18,8 @@ app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? "http://localhost:3000" }));
 app.use(express.json());
 app.use(morgan("dev"));
 
+app.get("/", (_request, response) => response.redirect("/api/health"));
+
 app.get("/api/health", (_request, response) =>
   response.json({
     status: "ok",

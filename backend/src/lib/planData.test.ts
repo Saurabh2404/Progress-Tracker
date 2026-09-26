@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { sprintOneDayTwo, sprintSeeds, taskSeeds } from "./catalog/index.js";
+import "./catalog/sprint1Day3.test.js";
+import "./catalog/sprint1Day4.test.js";
+import "./catalog/sprint1Day5.test.js";
+import "./catalog/sprint1Day6.test.js";
+import "./catalog/sprint1Day7.test.js";
 
 test("catalog contains the eight Planly sprints", () => {
   assert.equal(sprintSeeds.length, 8);
