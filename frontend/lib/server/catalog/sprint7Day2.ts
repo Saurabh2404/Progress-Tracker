@@ -1,0 +1,26 @@
+import { createDayTasks } from "./types";
+
+export const sprintSevenDay2 = createDayTasks(7, 2, 11, 4, [
+  ["Generate All Possible User-Category Pairs", 15],
+  ["Employees With or Without Salary Records", 15],
+  ["Match Employees With Their Salaries", 15],
+  ["Employees Earning More Than Their Manager", 15],
+  ["Students Enrolled in Courses", 15],
+  ["Sales Analysis", 15],
+  ["Minimum Distance Between Points", 15],
+  ["Suspended Accounts", 15],
+  ["Find Team Size for Each Employee", 15],
+  ["Average Experience by Project", 15],
+  ["Warehouse Stock Manager", 15],
+  ["Table Join Operation", 15],
+  ["Inactive Customers", 15],
+  ["Students Enrolled in Non-Existent Departments", 15],
+  ["Low Bonus Employees", 15],
+  ["Available Seat Streaks", 15],
+  ["Visitors Without Transactions", 15],
+  ["A & B Buyers Without C", 15],
+  ["Product Selling Price Report", 15],
+  ["Updated Bank Balances", 15],
+  ["Most Frequent Travellers", 15],
+  ["Suggested Pages", 15],
+]);
