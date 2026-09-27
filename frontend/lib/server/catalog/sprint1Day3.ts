@@ -1,5 +1,5 @@
-import { planDate } from "./date.js";
-import type { TaskSeed } from "./types.js";
+import { planDate } from "./date";
+import type { TaskSeed } from "./types";
 
 export const sprintOneDay3: TaskSeed[] = [
   {

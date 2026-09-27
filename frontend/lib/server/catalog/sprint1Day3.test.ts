@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sprintOneDay3 } from "./sprint1Day3.js";
+import { sprintOneDay3 } from "./sprint1Day3";
 
 test("Sprint 1 Day 3 matches the screenshot", () => {
   assert.equal(sprintOneDay3.length, 6);

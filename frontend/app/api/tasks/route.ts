@@ -15,9 +15,7 @@ export async function GET(request: Request) {
     const date = url.searchParams.get("date");
     if (sprintId) query.sprintId = sprintId;
     if (date) query.date = { $gte: new Date(`${date}T00:00:00`), $lte: new Date(`${date}T23:59:59.999`) };
-    const tasks = await Task.find(query)
-      .populate("sprintId", "name color")
-      .sort({ date: 1, completed: 1, createdAt: 1 });
+    const tasks = await Task.find(query).populate("sprintId", "name color").sort({ date: 1, order: 1, createdAt: 1 });
     return NextResponse.json(tasks);
   } catch (error) {
     return apiError(error);

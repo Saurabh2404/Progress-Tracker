@@ -3,6 +3,7 @@ import { Schema, model, models } from "mongoose";
 const taskSchema = new Schema(
   {
     sourceKey: { type: String, unique: true, sparse: true, index: true },
+    order: { type: Number, min: 1, default: 1 },
     sprintId: { type: Schema.Types.ObjectId, ref: "Sprint", required: true, index: true },
     title: { type: String, required: true, trim: true, maxlength: 140 },
     notes: { type: String, default: "", trim: true, maxlength: 500 },

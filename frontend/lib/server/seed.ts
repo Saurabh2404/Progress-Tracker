@@ -23,6 +23,7 @@ export async function syncPlanCatalog() {
 
     const metadata = {
       sourceKey: task.sourceKey,
+      order: (task.order ?? Number(task.sourceKey.split("-").at(-1))) || 1,
       sprintId,
       title: task.title,
       notes: task.notes,

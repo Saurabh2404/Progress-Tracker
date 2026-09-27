@@ -18,6 +18,7 @@ export function createDayTasks(
 ): TaskSeed[] {
   return tasks.map(([title, estimatedMinutes], index) => ({
     sourceKey: `s${sprintNumber}-d${dayNumber}-${index + 1}`,
+    order: index + 1,
     sprintName: `Sprint ${sprintNumber}`,
     title,
     notes: `Sprint ${sprintNumber} - Day ${dayNumber}`,
@@ -30,6 +31,7 @@ export function createDayTasks(
 
 export type TaskSeed = {
   sourceKey: string;
+  order?: number;
   sprintName: string;
   title: string;
   notes: string;
