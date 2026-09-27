@@ -1,4 +1,4 @@
-import type { Sprint, Task } from "./types";
+import type { PlanSettings, SessionUser, Sprint, Task } from "./types";
 
 const baseUrl = "/api";
 
@@ -32,4 +32,9 @@ export const api = {
   updateTask: (id: string, payload: Partial<Task>) =>
     request<Task>(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteTask: (id: string) => request<void>(`/tasks/${id}`, { method: "DELETE" }),
+  getSettings: () => request<PlanSettings>("/settings"),
+  updateSettings: (payload: Partial<Pick<PlanSettings, "planName" | "completionDate" | "isOnBreak">>) =>
+    request<PlanSettings>("/settings", { method: "PATCH", body: JSON.stringify(payload) }),
+  getSession: () => request<SessionUser>("/auth/session"),
+  logout: () => request<void>("/auth/logout", { method: "POST" }),
 };

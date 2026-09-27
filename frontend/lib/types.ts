@@ -23,4 +23,18 @@ export type Task = {
   estimatedMinutes: number;
   timeSpentSeconds?: number;
   completed: boolean;
+  starred: boolean;
+};
+
+export type PlanSettings = {
+  _id: string;
+  planName: string;
+  startDate: string;
+  completionDate: string;
+  isOnBreak: boolean;
+  breakStartedAt?: string | null;
+};
+
+export type SessionUser = {
+  email: string;
 };

@@ -14,6 +14,7 @@ const taskSchema = new Schema(
     timeSpentSeconds: { type: Number, min: 0, default: 0 },
     completed: { type: Boolean, default: false, index: true },
     completedAt: { type: Date, default: null },
+    starred: { type: Boolean, default: false, index: true },
   },
   { timestamps: true },
 );

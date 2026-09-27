@@ -39,4 +39,11 @@ export const taskPatch = z.object({
   estimatedMinutes: z.coerce.number().int().min(1).max(480).optional(),
   timeSpentSeconds: z.coerce.number().int().min(0).optional(),
   completed: z.boolean().optional(),
+  starred: z.boolean().optional(),
+});
+
+export const planSettingsPatch = z.object({
+  planName: z.string().trim().min(1).max(80).optional(),
+  completionDate: dateString.optional(),
+  isOnBreak: z.boolean().optional(),
 });
