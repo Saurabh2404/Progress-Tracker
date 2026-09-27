@@ -37,6 +37,7 @@ import { sprintSixDay4 } from "./sprint6Day4";
 import { sprintSixDay5 } from "./sprint6Day5";
 import { sprintSixDay6 } from "./sprint6Day6";
 import { sprintSixDay7 } from "./sprint6Day7";
+import { sprintSevenDay1 } from "./sprint7Day1";
 export const taskSeeds = [
   ...sprintOneDayOne,
   ...sprintOneDayTwo,
@@ -74,4 +75,5 @@ export const taskSeeds = [
   ...sprintSixDay5,
   ...sprintSixDay6,
   ...sprintSixDay7,
+  ...sprintSevenDay1,
 ];
