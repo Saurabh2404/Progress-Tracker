@@ -5,7 +5,7 @@ export type SprintSeed = {
   endDate: Date;
   color: string;
   estimatedMinutes: number;
-  dayEstimates: number[];
+  dayEstimates: Array<number | null>;
   timeSpentSeconds?: number;
 };
 

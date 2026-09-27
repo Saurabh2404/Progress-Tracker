@@ -227,13 +227,16 @@ export function Dashboard() {
                           const dayNumber = dayIndex + 1;
                           const dayKey = `${sprint._id}:${dayNumber}`;
                           const isDayOpen = expandedDay === dayKey;
+                          const dayEstimate = sprint.dayEstimates?.[dayIndex];
+                          const isDayOff = dayEstimate == null;
                           const dayTasks = sprintTasks.filter((task) => (task.dayNumber ?? 1) === dayNumber);
                           const complete = dayTasks.length > 0 && dayTasks.every((task) => task.completed);
                           return (
                             <div key={dayKey}>
                               <button
                                 className="flex min-h-10 w-full items-center gap-2 text-left"
-                                onClick={() => setExpandedDay(isDayOpen ? null : dayKey)}
+                                onClick={() => !isDayOff && setExpandedDay(isDayOpen ? null : dayKey)}
+                                aria-disabled={isDayOff}
                               >
                                 <span
                                   className={`-ml-[19px] grid size-4 place-items-center rounded-full ${isDayOpen ? "bg-[#dbeaff]" : "bg-[#e8edf5]"}`}
@@ -244,7 +247,7 @@ export function Dashboard() {
                                   Day {dayNumber}
                                 </span>
                                 <span className="ml-auto text-xs text-[#59657a]">
-                                  Est. {minutesLabel(sprint.dayEstimates?.[dayIndex])}
+                                  {isDayOff ? "Day off" : `Est. ${minutesLabel(dayEstimate)}`}
                                 </span>
                                 <ChevronRight className="text-[#9aa4b5]" size={17} />
                               </button>
