@@ -55,7 +55,7 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(11, 2),
     color: "#9b6b39",
     estimatedMinutes: 1518,
-    dayEstimates: [],
+    dayEstimates: [320, 349, 152, 170, 169, 180, 178],
   },
   {
     name: "Sprint 7",
