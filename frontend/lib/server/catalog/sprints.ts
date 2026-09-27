@@ -1,5 +1,5 @@
-import { planDate } from "./date.js";
-import type { SprintSeed } from "./types.js";
+import { planDate } from "./date";
+import type { SprintSeed } from "./types";
 
 export const sprintSeeds: SprintSeed[] = [
   {
@@ -9,6 +9,7 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(10, 2),
     color: "#2f6f65",
     estimatedMinutes: 1493,
+    dayEstimates: [347, 327, 158, 175, 178, 172, 136],
     timeSpentSeconds: 709,
   },
   {
@@ -18,6 +19,7 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(10, 9),
     color: "#3977c9",
     estimatedMinutes: 1545,
+    dayEstimates: [346, 358, 166, 173, 179, 143, 180],
   },
   {
     name: "Sprint 3",
@@ -26,6 +28,7 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(10, 16),
     color: "#8d62b5",
     estimatedMinutes: 1479,
+    dayEstimates: [],
   },
   {
     name: "Sprint 4",
@@ -34,6 +37,7 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(10, 19),
     color: "#d36b3f",
     estimatedMinutes: 414,
+    dayEstimates: [],
   },
   {
     name: "Sprint 5",
@@ -42,6 +46,7 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(10, 26),
     color: "#2f7d96",
     estimatedMinutes: 1472,
+    dayEstimates: [],
   },
   {
     name: "Sprint 6",
@@ -50,6 +55,7 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(11, 2),
     color: "#9b6b39",
     estimatedMinutes: 1518,
+    dayEstimates: [],
   },
   {
     name: "Sprint 7",
@@ -58,6 +64,7 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(11, 9),
     color: "#56704c",
     estimatedMinutes: 1455,
+    dayEstimates: [],
   },
   {
     name: "Sprint 8",
@@ -66,5 +73,6 @@ export const sprintSeeds: SprintSeed[] = [
     endDate: planDate(11, 16),
     color: "#bd5265",
     estimatedMinutes: 855,
+    dayEstimates: [],
   },
 ];

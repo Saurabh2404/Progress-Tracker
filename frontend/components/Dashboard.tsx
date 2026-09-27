@@ -1,96 +1,64 @@
 "use client";
 
 import {
+  ArrowRight,
   BarChart3,
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronRight,
-  CirclePlus,
+  Circle,
   Clock3,
-  Flame,
-  LayoutDashboard,
-  ListTodo,
+  Coffee,
+  Folder,
   LoaderCircle,
-  Menu,
-  Plus,
-  RefreshCw,
-  Target,
-  Trash2,
-  X,
+  Moon,
+  Pencil,
+  Star,
 } from "lucide-react";
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import type { Sprint, Task } from "@/lib/types";
 
-type View = "dashboard" | "sprints" | "tasks";
+const TOTAL_PLAN_DAYS = 47;
 
-const colors = {
-  ink: "#182522",
-  muted: "#64716d",
-  line: "#dfe5e2",
-  paper: "#f7f8f6",
-  green: "#245e55",
-  greenDark: "#173d38",
-  yellow: "#f4c95d",
-  coral: "#d96d45",
-};
+function minutesLabel(minutes = 0) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return hours ? `${hours}h ${rest}m` : `${rest} min`;
+}
 
-const panel = "rounded-lg border border-[#dfe5e2] bg-white shadow-[0_18px_48px_rgba(29,52,47,0.08)]";
-const primaryButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border-0 bg-[#245e55] px-[18px] font-bold whitespace-nowrap text-white shadow-[0_7px_18px_rgba(36,94,85,0.18)] transition-colors hover:bg-[#173d38] disabled:cursor-not-allowed disabled:opacity-[.55]";
-const secondaryButton =
-  "inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-[#dfe5e2] bg-white px-[15px] font-bold whitespace-nowrap text-[#182522] transition-colors hover:border-[#245e55] hover:text-[#245e55] disabled:cursor-not-allowed disabled:opacity-[.55]";
-const iconButton =
-  "grid size-[38px] shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 text-[#64716d] transition-colors hover:bg-[#fae5dc] hover:text-[#d96d45]";
-const eyebrow = "mb-1.5 block text-[0.72rem] font-extrabold uppercase text-[#64716d]";
-const heading = "font-[family-name:var(--font-display)] text-2xl font-semibold text-[#182522]";
-const field =
-  "w-full rounded-md border border-[#cfd8d4] bg-white px-3 py-[11px] text-[#182522] outline-none focus:border-[#245e55] focus:ring-3 focus:ring-[#dcebe7]";
+function secondsLabel(seconds = 0) {
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return minutes ? `${minutes} min ${rest} sec` : `${rest} sec`;
+}
 
-const dateKey = (value: Date | string) => {
+function dateKey(value: string | Date) {
   const date = new Date(value);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-};
+}
 
-const todayKey = () => dateKey(new Date());
-
-const formatDate = (value: string, options?: Intl.DateTimeFormatOptions) =>
-  new Intl.DateTimeFormat("en-IN", options ?? { day: "numeric", month: "short" }).format(new Date(value));
-
-const formatLongDate = (value: Date) => {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "Asia/Kolkata",
-  }).formatToParts(value);
-  const byType = new Map(parts.map((part) => [part.type, part.value]));
-  return `${byType.get("weekday")}, ${byType.get("day")} ${byType.get("month")}`;
-};
-
-const dayDiff = (future: string) => Math.ceil((new Date(future).getTime() - Date.now()) / 86_400_000);
-const formatMinutes = (minutes = 0) => `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-const formatSeconds = (seconds = 0) => `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+function formatDate(value: string | Date) {
+  return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
+}
 
 export function Dashboard() {
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [view, setView] = useState<View>("dashboard");
+  const [expandedSprint, setExpandedSprint] = useState<string | null>(null);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [toast, setToast] = useState("");
-  const taskDialog = useRef<HTMLDialogElement>(null);
-  const sprintDialog = useRef<HTMLDialogElement>(null);
+  const [message, setMessage] = useState("");
 
   const loadData = useCallback(async () => {
     try {
-      setError("");
       const [nextSprints, nextTasks] = await Promise.all([api.getSprints(), api.getTasks()]);
       setSprints(nextSprints);
       setTasks(nextTasks);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to load your plan.");
+      setExpandedSprint((current) => current ?? nextSprints[0]?._id ?? null);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to load your plan.");
     } finally {
       setLoading(false);
     }
@@ -98,44 +66,41 @@ export function Dashboard() {
 
   useEffect(() => {
     void loadData();
+    const refresh = window.setInterval(() => void loadData(), 30_000);
+    return () => window.clearInterval(refresh);
   }, [loadData]);
+
+  const now = useMemo(() => new Date(), []);
+  const activeSprint =
+    sprints.find((sprint) => new Date(sprint.startDate) <= now && new Date(sprint.endDate) >= now) ?? sprints[0];
+  const todayTasks = tasks.filter((task) => dateKey(task.date) === dateKey(now));
+  const completedTasks = tasks.filter((task) => task.completed);
+  const completedDays = new Set(completedTasks.map((task) => dateKey(task.date))).size;
+  const completedSprints = sprints.filter(
+    (sprint) => sprint.taskCount > 0 && sprint.taskCount === sprint.completedCount,
+  ).length;
+  const overallProgress = tasks.length ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
+  const currentTask = todayTasks.find((task) => !task.completed) ?? tasks.find((task) => !task.completed);
+  const dayCompleted = todayTasks.filter((task) => task.completed).length;
+  const dayMinutes = todayTasks.reduce((sum, task) => sum + task.estimatedMinutes, 0);
+  const daySpent = todayTasks.reduce((sum, task) => sum + (task.timeSpentSeconds ?? 0), 0);
+  const dayProgress = todayTasks.length ? Math.round((dayCompleted / todayTasks.length) * 100) : 0;
+  const totalSpent = tasks.reduce((sum, task) => sum + (task.timeSpentSeconds ?? 0), 0);
+  const totalPlanned = sprints.reduce((sum, sprint) => sum + (sprint.estimatedMinutes ?? 0), 0);
 
   useEffect(() => {
-    const events = new EventSource(api.eventsUrl);
-    let refreshTimer: number | undefined;
-    const refresh = () => {
-      window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(() => void loadData(), 150);
-    };
-    events.addEventListener("refresh", refresh);
-    return () => {
-      window.clearTimeout(refreshTimer);
-      events.close();
-    };
-  }, [loadData]);
-
-  const activeSprint = useMemo(() => {
-    const now = Date.now();
-    return (
-      sprints.find(
-        (sprint) => new Date(sprint.startDate).getTime() <= now && new Date(sprint.endDate).getTime() >= now,
-      ) ?? sprints[0]
+    if (!activeSprint || expandedDay) return;
+    const firstToday = tasks.find(
+      (task) => task.sprintId._id === activeSprint._id && dateKey(task.date) === dateKey(now),
     );
-  }, [sprints]);
-
-  const todayTasks = tasks.filter((task) => dateKey(task.date) === todayKey());
-  const completeToday = todayTasks.filter((task) => task.completed).length;
-  const totalMinutes = todayTasks.reduce((sum, task) => sum + task.estimatedMinutes, 0);
-  const completedTasks = tasks.filter((task) => task.completed).length;
-  const overallProgress = tasks.length ? Math.round((completedTasks / tasks.length) * 100) : 0;
-  const daysLeft = activeSprint ? Math.max(0, dayDiff(activeSprint.endDate)) : 0;
-
-  const notify = (message: string) => {
-    setToast(message);
-    window.setTimeout(() => setToast(""), 2600);
-  };
+    setExpandedDay(`${activeSprint._id}:${firstToday?.dayNumber ?? 1}`);
+  }, [activeSprint, expandedDay, now, tasks]);
 
   async function toggleTask(task: Task) {
+    const previous = tasks;
+    setTasks((current) =>
+      current.map((item) => (item._id === task._id ? { ...item, completed: !item.completed } : item)),
+    );
     try {
       const updated = await api.updateTask(task._id, { completed: !task.completed });
       setTasks((current) => current.map((item) => (item._id === updated._id ? updated : item)));
@@ -146,886 +111,306 @@ export function Dashboard() {
             : sprint,
         ),
       );
-      notify(task.completed ? "Task moved back to your list" : "Nice work. Task completed.");
-    } catch (cause) {
-      notify(cause instanceof Error ? cause.message : "Could not update task");
+    } catch (error) {
+      setTasks(previous);
+      setMessage(error instanceof Error ? error.message : "Could not save progress.");
     }
   }
 
-  async function removeTask(id: string) {
-    const task = tasks.find((item) => item._id === id);
-    if (!task || !window.confirm("Delete this task?")) return;
-    await api.deleteTask(id);
-    setTasks((current) => current.filter((item) => item._id !== id));
-    setSprints((current) =>
-      current.map((sprint) =>
-        sprint._id === task.sprintId._id
-          ? {
-              ...sprint,
-              taskCount: sprint.taskCount - 1,
-              completedCount: sprint.completedCount - (task.completed ? 1 : 0),
-            }
-          : sprint,
-      ),
-    );
-    notify("Task deleted");
-  }
-
-  async function removeSprint(id: string) {
-    if (!window.confirm("Delete this sprint and all of its tasks?")) return;
-    await api.deleteSprint(id);
-    setSprints((current) => current.filter((item) => item._id !== id));
-    setTasks((current) => current.filter((task) => task.sprintId._id !== id));
-    notify("Sprint deleted");
-  }
-
-  return (
-    <div className="min-h-screen bg-[#f7f8f6] font-[family-name:var(--font-sans)] text-[#182522]">
-      {menuOpen && (
-        <button
-          className="fixed inset-0 z-20 bg-black/30 md:hidden"
-          onClick={() => setMenuOpen(false)}
-          aria-label="Close navigation overlay"
-        />
-      )}
-      <aside
-        className={`fixed inset-y-0 left-0 z-30 flex w-[236px] flex-col bg-[#173d38] px-[22px] py-[30px] text-[#eef8f5] shadow-2xl transition-transform md:translate-x-0 md:shadow-none ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
-      >
-        <div className="flex items-center gap-3 text-[0.95rem] leading-tight">
-          <span className="grid size-[42px] place-items-center rounded-lg bg-[#f4c95d] text-[#173d38]">
-            <BarChart3 size={20} />
-          </span>
-          <span>
-            Upgrading
-            <br />
-            <b className="font-[family-name:var(--font-display)] text-2xl font-semibold">Skills</b>
-          </span>
+  if (loading) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#f7f8fa] text-[#6d7480]">
+        <div className="flex items-center gap-3 text-sm font-semibold">
+          <LoaderCircle className="animate-spin text-[#2f7df6]" size={22} /> Loading your plan
         </div>
-        <button
-          className={`${iconButton} absolute top-6 right-4 text-white md:hidden`}
-          onClick={() => setMenuOpen(false)}
-          aria-label="Close navigation"
-        >
-          <X />
-        </button>
-        <nav className="mt-14 grid gap-2" aria-label="Main navigation">
-          <NavButton
-            active={view === "dashboard"}
-            icon={<LayoutDashboard />}
-            label="Overview"
-            onClick={() => {
-              setView("dashboard");
-              setMenuOpen(false);
-            }}
-          />
-          <NavButton
-            active={view === "sprints"}
-            icon={<Target />}
-            label="Sprints"
-            onClick={() => {
-              setView("sprints");
-              setMenuOpen(false);
-            }}
-          />
-          <NavButton
-            active={view === "tasks"}
-            icon={<ListTodo />}
-            label="All tasks"
-            onClick={() => {
-              setView("tasks");
-              setMenuOpen(false);
-            }}
-          />
-        </nav>
-        <div className="mt-auto flex items-center gap-3 border-t border-white/12 pt-4">
-          <div className="grid size-9 place-items-center rounded-full bg-white/10 text-[#d96d45]">
-            <Flame size={18} />
-          </div>
-          <div>
-            <strong className="text-sm">{Math.max(1, completeToday)} day streak</strong>
-            <span className="mt-0.5 block text-xs text-[#9fb5af]">Keep the rhythm going</span>
-          </div>
-        </div>
-      </aside>
-
-      <main className="min-h-screen md:ml-[236px]">
-        <header className="flex min-h-[92px] items-center gap-[18px] border-b border-[#dfe5e2] bg-[#f7f8f6]/95 px-[18px] py-[18px] backdrop-blur-md md:min-h-28 md:px-[clamp(24px,4vw,58px)] md:py-6">
-          <button className={`${iconButton} md:hidden`} onClick={() => setMenuOpen(true)} aria-label="Open navigation">
-            <Menu />
-          </button>
-          <div className="mr-auto min-w-0">
-            <p className="mb-1 hidden text-xs font-bold text-[#64716d] uppercase md:block">
-              {formatLongDate(new Date())}
-            </p>
-            <h1 className="font-[family-name:var(--font-display)] text-2xl leading-tight font-semibold md:text-[2.65rem]">
-              {view === "dashboard" ? "Your study desk" : view === "sprints" ? "Your sprints" : "All tasks"}
-            </h1>
-          </div>
-          <button
-            className={`${primaryButton} size-[42px] px-0 text-[0px] md:size-auto md:px-[18px] md:text-base`}
-            onClick={() => taskDialog.current?.showModal()}
-            disabled={!sprints.length}
-          >
-            <Plus size={18} />
-            <span className="hidden md:inline">Add task</span>
-          </button>
-        </header>
-
-        {loading ? (
-          <LoadingState />
-        ) : error ? (
-          <ErrorState message={error} retry={loadData} />
-        ) : (
-          <>
-            {view === "dashboard" && (
-              <DashboardView
-                activeSprint={activeSprint}
-                todayTasks={todayTasks}
-                completeToday={completeToday}
-                totalMinutes={totalMinutes}
-                overallProgress={overallProgress}
-                daysLeft={daysLeft}
-                tasks={tasks}
-                sprints={sprints}
-                toggleTask={toggleTask}
-                removeTask={removeTask}
-                showTasks={() => setView("tasks")}
-                addSprint={() => sprintDialog.current?.showModal()}
-              />
-            )}
-            {view === "sprints" && (
-              <SprintsView sprints={sprints} onAdd={() => sprintDialog.current?.showModal()} onDelete={removeSprint} />
-            )}
-            {view === "tasks" && <TasksView tasks={tasks} toggleTask={toggleTask} removeTask={removeTask} />}
-          </>
-        )}
       </main>
-
-      <TaskDialog
-        ref={taskDialog}
-        sprints={sprints}
-        onCreated={(task) => {
-          setTasks((current) => [...current, task]);
-          setSprints((current) =>
-            current.map((sprint) =>
-              sprint._id === task.sprintId._id ? { ...sprint, taskCount: sprint.taskCount + 1 } : sprint,
-            ),
-          );
-          notify("Task added to your plan");
-        }}
-      />
-      <SprintDialog
-        ref={sprintDialog}
-        onCreated={(sprint) => {
-          setSprints((current) => [...current, sprint].sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)));
-          notify("Sprint created");
-        }}
-      />
-      {toast && (
-        <div
-          className="fixed right-6 bottom-6 z-50 flex min-h-12 items-center gap-2 rounded-lg bg-[#173d38] px-4 text-sm font-bold text-white shadow-xl"
-          role="status"
-        >
-          <Check size={17} /> {toast}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function NavButton({
-  active,
-  icon,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`flex min-h-[46px] w-full items-center gap-3 rounded-lg border-0 px-3.5 text-left transition-colors [&_svg]:size-[19px] ${active ? "bg-white/10 text-white shadow-[inset_3px_0_#f4c95d]" : "bg-transparent text-[#b9cbc6] hover:bg-white/10 hover:text-white"}`}
-      onClick={onClick}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
-  );
-}
-
-function DashboardView({
-  activeSprint,
-  todayTasks,
-  completeToday,
-  totalMinutes,
-  overallProgress,
-  daysLeft,
-  tasks,
-  sprints,
-  toggleTask,
-  removeTask,
-  showTasks,
-  addSprint,
-}: {
-  activeSprint?: Sprint;
-  todayTasks: Task[];
-  completeToday: number;
-  totalMinutes: number;
-  overallProgress: number;
-  daysLeft: number;
-  tasks: Task[];
-  sprints: Sprint[];
-  toggleTask: (task: Task) => void;
-  removeTask: (id: string) => void;
-  showTasks: () => void;
-  addSprint: () => void;
-}) {
-  const week = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - 6 + index);
-    const dayTasks = tasks.filter((task) => dateKey(task.date) === dateKey(date));
-    return {
-      label: new Intl.DateTimeFormat("en", { weekday: "short" }).format(date).slice(0, 1),
-      value: dayTasks.length
-        ? Math.round((dayTasks.filter((task) => task.completed).length / dayTasks.length) * 100)
-        : 0,
-      today: index === 6,
-    };
-  });
+    );
+  }
 
   return (
-    <div className="px-4 py-[22px] pb-10 md:px-[clamp(24px,4vw,58px)] md:py-[30px] md:pb-[54px]">
-      <section className="mb-[18px] grid grid-cols-1 gap-2 lg:grid-cols-3 lg:gap-3.5" aria-label="Progress summary">
-        <Metric
-          icon={<Target />}
-          label="Overall progress"
-          value={`${overallProgress}%`}
-          detail={`${tasks.filter((task) => task.completed).length} of ${tasks.length} tasks`}
-          accent="green"
-        />
-        <Metric
-          icon={<CalendarDays />}
-          label="Days left"
-          value={String(daysLeft)}
-          detail={activeSprint?.name ?? "No active sprint"}
-          accent="yellow"
-        />
-        <Metric
-          icon={<Check />}
-          label="Done today"
-          value={`${completeToday}/${todayTasks.length}`}
-          detail={`${totalMinutes} min planned`}
-          accent="coral"
-        />
-      </section>
-
-      <div className="grid items-start gap-[18px] xl:grid-cols-[minmax(0,1.75fr)_minmax(280px,.85fr)]">
-        <section className={`${panel} p-5 md:p-[26px]`}>
-          <SectionHeading eyebrowText="Today" title="Make today count">
-            <button
-              className="inline-flex items-center gap-1 bg-transparent font-bold text-[#245e55]"
-              onClick={showTasks}
-            >
-              View all <ChevronRight size={16} />
-            </button>
-          </SectionHeading>
-          <div className="my-6 flex items-center gap-5">
-            <div className="grid min-w-[72px]">
-              <strong className="font-[family-name:var(--font-display)] text-[1.6rem] leading-none">
-                {todayTasks.length ? Math.round((completeToday / todayTasks.length) * 100) : 0}%
-              </strong>
-              <span className="text-xs text-[#64716d]">daily goal</span>
-            </div>
-            <ProgressBar value={todayTasks.length ? (completeToday / todayTasks.length) * 100 : 0} />
-          </div>
-          <div className="mt-2">
-            {todayTasks.length ? (
-              todayTasks.map((task) => (
-                <TaskRow key={task._id} task={task} toggleTask={toggleTask} removeTask={removeTask} />
-              ))
-            ) : (
-              <EmptyState title="A clear slate" text="Add a task and give today a direction." />
-            )}
-          </div>
-        </section>
-
-        <aside className="grid gap-[18px] md:grid-cols-2 xl:grid-cols-1">
-          <section className={`${panel} p-6`}>
-            <SectionHeading eyebrowText="Current sprint" title={activeSprint?.name ?? "Plan your first sprint"}>
-              <span className="rounded-md bg-[#fff2c7] px-2.5 py-1.5 text-xs font-extrabold text-[#8d6700]">
-                {daysLeft} days
-              </span>
-            </SectionHeading>
-            {activeSprint ? (
-              <>
-                <p className="my-[18px] mb-6 text-sm leading-relaxed text-[#64716d]">{activeSprint.goal}</p>
-                <div>
-                  <div className="mb-2 flex justify-between text-xs text-[#64716d]">
-                    <span>Progress</span>
-                    <strong className="text-[#182522]">
-                      {activeSprint.taskCount
-                        ? Math.round((activeSprint.completedCount / activeSprint.taskCount) * 100)
-                        : 0}
-                      %
-                    </strong>
-                  </div>
-                  <ProgressBar
-                    value={activeSprint.taskCount ? (activeSprint.completedCount / activeSprint.taskCount) * 100 : 0}
-                    color={activeSprint.color}
-                  />
-                  <div className="mt-2 flex justify-between text-xs text-[#64716d]">
-                    <span>{formatDate(activeSprint.startDate)}</span>
-                    <span>{formatDate(activeSprint.endDate)}</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <button className={`${secondaryButton} mt-5`} onClick={addSprint}>
-                <CirclePlus size={18} /> Create sprint
-              </button>
-            )}
-          </section>
-
-          <section className={`${panel} p-6`}>
-            <SectionHeading eyebrowText="Last 7 days" title="Consistency">
-              <strong>{week.filter((day) => day.value > 0).length}/7</strong>
-            </SectionHeading>
-            <div className="mt-5 grid h-[142px] grid-cols-7 gap-2">
-              {week.map((day, index) => (
-                <div className="grid grid-rows-[1fr_auto] gap-2 text-center" key={index}>
-                  <div className="flex items-end overflow-hidden rounded bg-[#edf1ef]">
-                    <span className="w-full rounded-t bg-[#245e55]" style={{ height: `${Math.max(6, day.value)}%` }} />
-                  </div>
-                  <b className={`text-[0.69rem] ${day.today ? "text-[#d96d45]" : "text-[#64716d]"}`}>{day.label}</b>
-                </div>
-              ))}
-            </div>
-          </section>
-        </aside>
-      </div>
-
-      <section className="mt-[18px] block gap-[30px] rounded-lg border border-[#dfe5e2] bg-white px-[26px] py-[23px] lg:flex lg:items-start lg:justify-between">
-        <div>
-          <span className={eyebrow}>Roadmap</span>
-          <h2 className={heading}>Upcoming sprints</h2>
+    <div className="min-h-screen bg-[#f7f8fa] font-[family-name:var(--font-sans)] text-[#20232d]">
+      <header className="sticky top-0 z-40 flex h-[58px] items-center border-b border-white/5 bg-[#11111d] px-4 text-white md:px-7">
+        <div className="flex items-center gap-2.5 font-semibold">
+          <span className="grid size-8 place-items-center rounded-md bg-[#2f7df6] text-sm font-black italic">U</span>
+          <span>Upgrading Skills</span>
         </div>
-        <div className="mt-5 grid w-full grid-cols-2 gap-x-6 gap-y-[18px] lg:mt-0 lg:w-[78%] lg:grid-cols-4">
-          {sprints.map((sprint, index) => (
-            <div className="flex min-w-0 items-center gap-2.5" key={sprint._id}>
-              <span
-                className="grid size-[35px] shrink-0 place-items-center rounded-md text-xs font-extrabold text-white"
-                style={{ background: sprint.color }}
-              >
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <div className="grid min-w-0 gap-0.5">
-                <strong className="truncate text-[0.82rem]">{sprint.name}</strong>
-                <small className="truncate text-[0.7rem] text-[#64716d]">
-                  {formatMinutes(sprint.estimatedMinutes)} planned
-                </small>
+        <div className="ml-auto flex items-center gap-4 text-xs text-[#afb3c3]">
+          <span className="hidden sm:inline">Planly workspace</span>
+          <span className="h-5 w-px bg-white/15" />
+          <Moon size={17} />
+        </div>
+      </header>
+
+      <main className="mx-auto grid max-w-[1900px] grid-cols-1 gap-5 p-3 md:p-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0">
+          <section className="mb-5">
+            <p className="mb-2 text-xs font-semibold text-[#788091]">
+              Planly / <span className="text-[#313747]">Upgrading_Skills</span>
+            </p>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h1 className="flex items-center gap-2 text-[26px] font-bold tracking-[0] text-[#20232d]">
+                  Upgrading_Skills <Pencil size={17} className="text-[#98a2b3]" />
+                </h1>
+                <p className="mt-2 flex items-center gap-2 text-sm text-[#687083]">
+                  <CalendarDays size={16} /> 26 Sept 2026 <span className="size-1 rounded-full bg-[#98a2b3]" />{" "}
+                  Currently on: {activeSprint?.name ?? "Sprint 1"}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button className="h-10 rounded-md border border-[#dfe3ea] bg-white px-4 text-sm font-semibold shadow-sm">
+                  Adjust plan
+                </button>
+                <button className="flex h-10 items-center gap-2 rounded-md border border-[#dfe3ea] bg-white px-4 text-sm font-semibold shadow-sm">
+                  <Coffee size={16} /> Take a break
+                </button>
               </div>
             </div>
-          ))}
+          </section>
+
+          <section className="mb-6 grid overflow-hidden rounded-lg border border-[#e0e4eb] bg-white shadow-[0_2px_10px_rgba(24,32,52,0.05)] sm:grid-cols-2 lg:grid-cols-4">
+            <Summary
+              icon={<BarChart3 size={16} />}
+              label="Overall progress"
+              value={`${overallProgress}%`}
+              detail={`${completedDays} / ${TOTAL_PLAN_DAYS} days`}
+            />
+            <Summary
+              icon={<Clock3 size={16} />}
+              label="Time spent"
+              value={secondsLabel(totalSpent)}
+              detail={`of ${minutesLabel(totalPlanned)}`}
+            />
+            <Summary
+              icon={<Folder size={16} />}
+              label="Sprints completed"
+              value={String(completedSprints)}
+              detail={`of ${sprints.length} sprints`}
+            />
+            <Summary icon={<CalendarDays size={16} />} label="Est. completion" value="16 NOV" detail="2026" last />
+          </section>
+
+          <section className="space-y-3">
+            {sprints.map((sprint) => {
+              const isOpen = expandedSprint === sprint._id;
+              const sprintTasks = tasks.filter((task) => task.sprintId._id === sprint._id);
+              const days = sprint.dayEstimates?.length ?? 0;
+              return (
+                <article
+                  key={sprint._id}
+                  className={`overflow-hidden rounded-lg border bg-white ${isOpen ? "border-[#7cb0ff]" : "border-[#e0e4eb]"}`}
+                >
+                  <button
+                    className="flex min-h-14 w-full items-center gap-3 px-4 text-left"
+                    onClick={() => setExpandedSprint(isOpen ? null : sprint._id)}
+                  >
+                    <span
+                      className={`size-5 rounded-full border ${sprint.completedCount === sprint.taskCount && sprint.taskCount ? "border-[#20b26b] bg-[#20b26b]" : "border-[#d7dde7]"}`}
+                    />
+                    <span className="rounded-md border border-[#2f7df6] px-3 py-1 text-xs font-semibold">
+                      {sprint.name}
+                    </span>
+                    <span className="ml-auto hidden rounded-md bg-[#e8f1ff] px-3 py-1 text-xs font-semibold text-[#2f7df6] md:block">
+                      {sprint === activeSprint ? "Current" : "• Upcoming"}
+                    </span>
+                    <span className="text-xs text-[#5f687b]">Est. {minutesLabel(sprint.estimatedMinutes)}</span>
+                    <span className="hidden text-xs text-[#5f687b] sm:inline">
+                      · Time spent: {secondsLabel(sprint.timeSpentSeconds)}
+                    </span>
+                    {isOpen ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
+                  </button>
+
+                  {isOpen && days > 0 && (
+                    <div className="border-t border-[#e5e8ef] px-3 pb-3 md:px-5">
+                      <div className="border-l-2 border-[#2f7df6] pl-2">
+                        {Array.from({ length: days }, (_, dayIndex) => {
+                          const dayNumber = dayIndex + 1;
+                          const dayKey = `${sprint._id}:${dayNumber}`;
+                          const isDayOpen = expandedDay === dayKey;
+                          const dayTasks = sprintTasks.filter((task) => (task.dayNumber ?? 1) === dayNumber);
+                          const complete = dayTasks.length > 0 && dayTasks.every((task) => task.completed);
+                          return (
+                            <div key={dayKey}>
+                              <button
+                                className="flex min-h-10 w-full items-center gap-2 text-left"
+                                onClick={() => setExpandedDay(isDayOpen ? null : dayKey)}
+                              >
+                                <span
+                                  className={`-ml-[19px] grid size-4 place-items-center rounded-full ${isDayOpen ? "bg-[#dbeaff]" : "bg-[#e8edf5]"}`}
+                                >
+                                  {isDayOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                </span>
+                                <span className={`text-sm font-semibold ${complete ? "text-[#20a664]" : ""}`}>
+                                  Day {dayNumber}
+                                </span>
+                                <span className="ml-auto text-xs text-[#59657a]">
+                                  Est. {minutesLabel(sprint.dayEstimates?.[dayIndex])}
+                                </span>
+                                <ChevronRight className="text-[#9aa4b5]" size={17} />
+                              </button>
+                              {isDayOpen && (
+                                <div className="mb-2 overflow-hidden rounded-lg border border-[#e0e5ed] bg-white">
+                                  {dayTasks.length ? (
+                                    dayTasks.map((task) => <TaskRow task={task} key={task._id} onToggle={toggleTask} />)
+                                  ) : (
+                                    <div className="px-5 py-7 text-center text-sm text-[#7c8494]">
+                                      Question details are waiting for the expanded Day {dayNumber} screenshot.
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </section>
         </div>
-      </section>
+
+        <aside className="min-w-0 space-y-4 xl:sticky xl:top-[78px] xl:self-start">
+          <div className="flex h-12 items-center justify-between rounded-lg border border-[#e1e5ec] bg-white px-4 shadow-sm">
+            <strong className="flex items-center gap-2 text-sm">
+              <Star size={16} fill="currentColor" /> Revision list
+            </strong>
+            <button className="text-sm font-semibold text-[#2f7df6]">View all</button>
+          </div>
+          <div className="rounded-lg border border-[#e1e5ec] bg-white p-4 shadow-[0_3px_14px_rgba(30,42,64,0.06)]">
+            <div className="flex items-center justify-between text-[11px] text-[#778196]">
+              <span>Today · {formatDate(now)}</span>
+              <span className="text-[#2f7df6]">
+                Day {currentTask?.dayNumber ?? 1} · {currentTask?.sprintId.name ?? "Sprint 1"}
+              </span>
+            </div>
+            <p className="mt-5 text-[11px] font-semibold text-[#778196]">◉ START YOUR NEXT TASK</p>
+            <div className="mt-2 flex min-h-20 items-center rounded-lg border-l-2 border-[#2f7df6] bg-[#fbfcfe] px-4">
+              <strong className="text-[15px]">{currentTask?.title ?? "All caught up"}</strong>
+              <button
+                className="ml-auto grid size-11 place-items-center rounded-full bg-[#2f7df6] text-white"
+                aria-label="Open current task"
+              >
+                <ArrowRight size={19} />
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-[#e2e6ed] p-3">
+              <h2 className="mb-2 flex items-center gap-2 text-sm font-bold">◉ TODAY&apos;S TASK</h2>
+              <div className="max-h-[290px] overflow-y-auto pr-1">
+                {(todayTasks.length ? todayTasks : tasks.slice(0, 6)).map((task) => (
+                  <button
+                    key={task._id}
+                    className="flex min-h-10 w-full items-center gap-2 text-left"
+                    onClick={() => void toggleTask(task)}
+                  >
+                    <span
+                      className={`grid size-4 shrink-0 place-items-center rounded-full border ${task.completed ? "border-[#20b26b] text-[#20b26b]" : "border-[#aeb7c6] text-[#aeb7c6]"}`}
+                    >
+                      {task.completed ? <Check size={11} /> : <Circle size={8} />}
+                    </span>
+                    <span
+                      className={`min-w-0 flex-1 truncate text-xs ${task.completed ? "text-[#8991a0] line-through" : ""}`}
+                    >
+                      {task.title}
+                    </span>
+                    <Star size={15} className="text-[#8b96a8]" />
+                    <span className="text-[10px] text-[#687287]">
+                      {task.completed && task.timeSpentSeconds
+                        ? secondsLabel(task.timeSpentSeconds)
+                        : `Est. ${task.estimatedMinutes} min`}
+                    </span>
+                    <ChevronRight size={14} className="text-[#9ba5b6]" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-[#e2e6ed] p-4">
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold">
+                <BarChart3 size={16} /> DAY PROGRESS
+              </h2>
+              <ProgressLine label="Tasks" value={`${dayCompleted} / ${todayTasks.length}`} />
+              <ProgressLine label="Time spent" value={secondsLabel(daySpent)} />
+              <ProgressLine label="Scheduled" value={minutesLabel(dayMinutes)} />
+              <div className="mt-3 flex items-center gap-3 text-sm text-[#5f687a]">
+                <BarChart3 size={15} /> <span>Progress</span>
+                <div className="ml-auto h-2 w-32 overflow-hidden rounded-full bg-[#e7eaf0]">
+                  <div className="h-full rounded-full bg-[#2f7df6]" style={{ width: `${dayProgress}%` }} />
+                </div>
+                <strong className="text-[#20232d]">{dayProgress}%</strong>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      {message && (
+        <button
+          className="fixed right-5 bottom-5 z-50 rounded-md bg-[#20232d] px-4 py-3 text-sm text-white shadow-xl"
+          onClick={() => setMessage("")}
+        >
+          {message}
+        </button>
+      )}
     </div>
   );
 }
 
-function SectionHeading({
-  eyebrowText,
-  title,
-  children,
-}: {
-  eyebrowText: string;
-  title: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-[18px]">
-      <div>
-        <span className={eyebrow}>{eyebrowText}</span>
-        <h2 className={heading}>{title}</h2>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function ProgressBar({ value, color = colors.green }: { value: number; color?: string }) {
-  return (
-    <div className="h-[7px] w-full overflow-hidden rounded-full bg-[#e9eeec]">
-      <span
-        className="block h-full rounded-[inherit] transition-[width] duration-300"
-        style={{ width: `${Math.min(100, Math.max(0, value))}%`, background: color }}
-      />
-    </div>
-  );
-}
-
-function Metric({
+function Summary({
   icon,
   label,
   value,
   detail,
-  accent,
+  last = false,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   detail: string;
-  accent: "green" | "yellow" | "coral";
+  last?: boolean;
 }) {
-  const accents = {
-    green: "bg-[#dcebe7] text-[#245e55]",
-    yellow: "bg-[#fff2c7] text-[#8d6700]",
-    coral: "bg-[#fae5dc] text-[#d96d45]",
-  };
   return (
-    <div className="flex min-h-[88px] items-center gap-3.5 rounded-lg border border-[#dfe5e2] bg-white px-4 py-3 lg:min-h-[126px] lg:gap-[17px] lg:p-5">
-      <span className={`grid size-[38px] shrink-0 place-items-center rounded-lg lg:size-11 ${accents[accent]}`}>
-        {icon}
-      </span>
-      <div className="grid">
-        <span className="text-xs font-semibold text-[#64716d]">{label}</span>
-        <strong className="my-0.5 font-[family-name:var(--font-display)] text-2xl leading-none font-semibold lg:text-[2rem]">
-          {value}
-        </strong>
-        <small className="text-xs font-semibold text-[#64716d]">{detail}</small>
+    <div className={`min-h-24 px-5 py-4 ${last ? "" : "border-b border-[#e4e7ed] sm:border-r sm:border-b-0"}`}>
+      <div className="flex items-center gap-2 text-[11px] font-semibold text-[#737d90]">
+        {icon} {label}
+      </div>
+      <div className="mt-2 flex items-end gap-2">
+        <strong className="text-2xl leading-none">{value}</strong>
+        <span className="text-xs text-[#687287]">{detail}</span>
       </div>
     </div>
   );
 }
 
-function TaskRow({
-  task,
-  toggleTask,
-  removeTask,
-}: {
-  task: Task;
-  toggleTask: (task: Task) => void;
-  removeTask: (id: string) => void;
-}) {
-  const duration =
-    task.completed && task.timeSpentSeconds ? formatSeconds(task.timeSpentSeconds) : `${task.estimatedMinutes}m`;
-  const difficulty = {
-    Easy: "bg-[#dcebe7] text-[#27695e]",
-    Medium: "bg-[#fff2c7] text-[#8a6500]",
-    Hard: "bg-[#fae5dc] text-[#a14625]",
-  }[task.difficulty];
+function TaskRow({ task, onToggle }: { task: Task; onToggle: (task: Task) => Promise<void> }) {
   return (
-    <div className="grid min-h-[76px] grid-cols-[28px_minmax(0,1fr)_34px] items-center gap-3 border-t border-[#dfe5e2] py-3 md:grid-cols-[30px_minmax(0,1fr)_auto_auto_34px] md:py-0">
+    <div className="flex min-h-[50px] items-center gap-3 border-b border-[#eef0f4] px-3 last:border-b-0 md:px-4">
       <button
-        className={`grid size-6 place-items-center rounded-full border-2 p-0 text-white ${task.completed ? "border-[#245e55] bg-[#245e55]" : "border-[#b7c2be] bg-white"}`}
-        onClick={() => toggleTask(task)}
-        aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
+        className={`grid size-4 shrink-0 place-items-center rounded-full border ${task.completed ? "border-[#20b26b] text-[#20b26b]" : "border-[#b6c0cf] text-[#b6c0cf]"}`}
+        onClick={() => void onToggle(task)}
+        aria-label={task.completed ? `Mark ${task.title} incomplete` : `Mark ${task.title} complete`}
       >
-        {task.completed && <Check size={16} />}
+        {task.completed ? <Check size={11} /> : <Circle size={8} />}
       </button>
-      <div className="grid min-w-0 gap-1.5">
-        <strong className={`truncate text-sm ${task.completed ? "text-[#87918e] line-through" : ""}`}>
-          {task.title}
-        </strong>
-        <span className="flex items-center gap-1.5 text-xs text-[#64716d]">
-          <i className="size-[7px] rounded-full" style={{ background: task.sprintId.color }} />
-          {task.sprintId.name} - Day {task.dayNumber ?? 1}
-        </span>
-      </div>
       <span
-        className={`hidden min-w-16 rounded px-2 py-1 text-center text-[0.7rem] font-extrabold md:block ${difficulty}`}
+        className={`min-w-0 flex-1 text-xs md:text-sm ${task.completed ? "text-[#8a92a0] line-through" : "text-[#596274]"}`}
       >
-        {task.difficulty}
+        {task.title}
       </span>
-      <span className="hidden items-center gap-1 text-xs text-[#64716d] md:flex">
-        <Clock3 size={15} /> {duration}
-      </span>
-      <button
-        className={iconButton}
-        onClick={() => removeTask(task._id)}
-        aria-label={`Delete ${task.title}`}
-        title="Delete task"
-      >
-        <Trash2 size={17} />
-      </button>
+      <Star size={16} className="shrink-0 text-[#9aa7ba]" />
+      <span className="w-20 text-right text-xs text-[#637087]">Est. {task.estimatedMinutes} min</span>
+      <ChevronRight size={15} className="text-[#92a0b3]" />
     </div>
   );
 }
 
-function SprintsView({
-  sprints,
-  onAdd,
-  onDelete,
-}: {
-  sprints: Sprint[];
-  onAdd: () => void;
-  onDelete: (id: string) => void;
-}) {
+function ProgressLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-4 py-[22px] pb-10 md:px-[clamp(24px,4vw,58px)] md:py-[30px] md:pb-[54px]">
-      <div className="mb-[22px] flex items-end justify-between gap-[18px]">
-        <div>
-          <span className={eyebrow}>Your roadmap</span>
-          <h2 className={heading}>{sprints.length} focused sprints</h2>
-        </div>
-        <button className={secondaryButton} onClick={onAdd}>
-          <Plus size={18} /> New sprint
-        </button>
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        {sprints.map((sprint, index) => {
-          const progress = sprint.taskCount ? Math.round((sprint.completedCount / sprint.taskCount) * 100) : 0;
-          return (
-            <article className="min-h-[260px] rounded-lg border border-[#dfe5e2] bg-white p-[22px]" key={sprint._id}>
-              <div className="mb-7 flex justify-between">
-                <span
-                  className="grid size-[35px] place-items-center rounded-md text-xs font-extrabold text-white"
-                  style={{ background: sprint.color }}
-                >
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <button
-                  className={iconButton}
-                  onClick={() => onDelete(sprint._id)}
-                  aria-label={`Delete ${sprint.name}`}
-                  title="Delete sprint"
-                >
-                  <Trash2 size={17} />
-                </button>
-              </div>
-              <span className={eyebrow}>
-                {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
-              </span>
-              <h3 className="my-2 font-[family-name:var(--font-display)] text-2xl font-semibold">{sprint.name}</h3>
-              <p className="min-h-[68px] text-sm leading-relaxed text-[#64716d]">
-                {formatMinutes(sprint.estimatedMinutes)} planned
-              </p>
-              <div className="mb-2 flex justify-between text-xs text-[#64716d]">
-                <span>
-                  {sprint.completedCount}/{sprint.taskCount} tasks
-                </span>
-                <strong className="text-[#182522]">{progress}%</strong>
-              </div>
-              <ProgressBar value={progress} color={sprint.color} />
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TasksView({
-  tasks,
-  toggleTask,
-  removeTask,
-}: {
-  tasks: Task[];
-  toggleTask: (task: Task) => void;
-  removeTask: (id: string) => void;
-}) {
-  const [filter, setFilter] = useState<"all" | "open" | "done">("all");
-  const [sprintFilter, setSprintFilter] = useState("all");
-  const [dayFilter, setDayFilter] = useState("all");
-  const sprintOptions = Array.from(new Map(tasks.map((task) => [task.sprintId._id, task.sprintId])).values());
-  const dayOptions = Array.from(
-    new Set(
-      tasks
-        .filter((task) => sprintFilter === "all" || task.sprintId._id === sprintFilter)
-        .map((task) => task.dayNumber ?? 1),
-    ),
-  ).sort((a, b) => a - b);
-  const visible = tasks.filter(
-    (task) =>
-      (sprintFilter === "all" || task.sprintId._id === sprintFilter) &&
-      (dayFilter === "all" || String(task.dayNumber ?? 1) === dayFilter) &&
-      (filter === "all" || (filter === "done" ? task.completed : !task.completed)),
-  );
-  return (
-    <div className="px-4 py-[22px] pb-10 md:px-[clamp(24px,4vw,58px)] md:py-[30px] md:pb-[54px]">
-      <div className="mb-[22px] flex items-end justify-between gap-[18px]">
-        <div>
-          <span className={eyebrow}>Task library</span>
-          <h2 className={heading}>{visible.length} items in view</h2>
-        </div>
-        <div className="flex rounded-lg border border-[#dfe5e2] bg-white p-[3px]" aria-label="Filter tasks">
-          {(["all", "open", "done"] as const).map((item) => (
-            <button
-              className={`min-h-[34px] rounded-md border-0 px-3 capitalize ${filter === item ? "bg-[#245e55] text-white" : "bg-transparent text-[#64716d]"}`}
-              key={item}
-              onClick={() => setFilter(item)}
-              aria-pressed={filter === item}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="mb-5 grid gap-3 sm:grid-cols-2">
-        <Field label="Sprint">
-          <select
-            className={field}
-            value={sprintFilter}
-            onChange={(event) => {
-              setSprintFilter(event.target.value);
-              setDayFilter("all");
-            }}
-          >
-            <option value="all">All sprints</option>
-            {sprintOptions.map((sprint) => (
-              <option key={sprint._id} value={sprint._id}>
-                {sprint.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Day">
-          <select className={field} value={dayFilter} onChange={(event) => setDayFilter(event.target.value)}>
-            <option value="all">All days</option>
-            {dayOptions.map((day) => (
-              <option key={day} value={day}>
-                Day {day}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
-      <section className={`${panel} px-[18px] py-0 md:px-6`}>
-        {visible.length ? (
-          visible.map((task) => (
-            <div
-              key={task._id}
-              className="grid grid-cols-1 border-t border-[#dfe5e2] pt-3 first:border-t-0 md:grid-cols-[72px_1fr] md:items-center md:pt-0"
-            >
-              <span className="text-xs font-extrabold text-[#64716d] uppercase">
-                {formatDate(task.date, { day: "2-digit", month: "short" })}
-              </span>
-              <TaskRow task={task} toggleTask={toggleTask} removeTask={removeTask} />
-            </div>
-          ))
-        ) : (
-          <EmptyState title="Nothing here" text="Change the filter or add a task." />
-        )}
-      </section>
-    </div>
-  );
-}
-
-function TaskDialog({
-  ref,
-  sprints,
-  onCreated,
-}: {
-  ref: React.RefObject<HTMLDialogElement | null>;
-  sprints: Sprint[];
-  onCreated: (task: Task) => void;
-}) {
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setMessage("");
-    const data = new FormData(event.currentTarget);
-    try {
-      const task = await api.createTask({
-        sprintId: String(data.get("sprintId")),
-        title: String(data.get("title")),
-        notes: String(data.get("notes")),
-        date: String(data.get("date")),
-        difficulty: String(data.get("difficulty")) as Task["difficulty"],
-        estimatedMinutes: Number(data.get("estimatedMinutes")),
-      });
-      onCreated(task);
-      event.currentTarget.reset();
-      ref.current?.close();
-    } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : "Unable to add task");
-    } finally {
-      setSaving(false);
-    }
-  }
-  return (
-    <dialog
-      ref={ref}
-      className="m-auto max-h-[90vh] w-[min(560px,calc(100%_-_28px))] rounded-lg border-0 bg-white p-0 text-[#182522] shadow-[0_30px_90px_rgba(16,39,35,0.25)] backdrop:bg-[#0d1e1b]/65 backdrop:backdrop-blur-sm"
-    >
-      <form className="grid gap-[17px] p-7" onSubmit={submit}>
-        <DialogHeader eyebrowText="Plan the work" title="Add a task" close={() => ref.current?.close()} />
-        <Field label="Task name">
-          <input className={field} name="title" placeholder="e.g. Solve 3 array problems" required />
-        </Field>
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-          <Field label="Sprint">
-            <select className={field} name="sprintId" required defaultValue={sprints[0]?._id}>
-              {sprints.map((sprint) => (
-                <option value={sprint._id} key={sprint._id}>
-                  {sprint.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Date">
-            <input className={field} name="date" type="date" defaultValue={todayKey()} required />
-          </Field>
-          <Field label="Difficulty">
-            <select className={field} name="difficulty" defaultValue="Medium">
-              <option>Easy</option>
-              <option>Medium</option>
-              <option>Hard</option>
-            </select>
-          </Field>
-          <Field label="Minutes">
-            <input
-              className={field}
-              name="estimatedMinutes"
-              type="number"
-              min="5"
-              max="480"
-              step="5"
-              defaultValue="45"
-              required
-            />
-          </Field>
-        </div>
-        <Field label="Notes">
-          <textarea className={field} name="notes" placeholder="Optional context or focus point" rows={3} />
-        </Field>
-        {message && <p className="m-0 text-sm text-[#a63e26]">{message}</p>}
-        <button className={`${primaryButton} mt-1 w-full`} disabled={saving}>
-          {saving ? <LoaderCircle className="animate-spin" size={18} /> : <Plus size={18} />}{" "}
-          {saving ? "Adding..." : "Add task"}
-        </button>
-      </form>
-    </dialog>
-  );
-}
-
-function SprintDialog({
-  ref,
-  onCreated,
-}: {
-  ref: React.RefObject<HTMLDialogElement | null>;
-  onCreated: (sprint: Sprint) => void;
-}) {
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setMessage("");
-    const data = new FormData(event.currentTarget);
-    try {
-      const sprint = await api.createSprint({
-        name: String(data.get("name")),
-        goal: String(data.get("goal")),
-        startDate: String(data.get("startDate")),
-        endDate: String(data.get("endDate")),
-        color: String(data.get("color")),
-        estimatedMinutes: Number(data.get("estimatedMinutes")),
-      });
-      onCreated(sprint);
-      event.currentTarget.reset();
-      ref.current?.close();
-    } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : "Unable to create sprint");
-    } finally {
-      setSaving(false);
-    }
-  }
-  return (
-    <dialog
-      ref={ref}
-      className="m-auto max-h-[90vh] w-[min(560px,calc(100%_-_28px))] rounded-lg border-0 bg-white p-0 text-[#182522] shadow-[0_30px_90px_rgba(16,39,35,0.25)] backdrop:bg-[#0d1e1b]/65 backdrop:backdrop-blur-sm"
-    >
-      <form className="grid gap-[17px] p-7" onSubmit={submit}>
-        <DialogHeader eyebrowText="Shape the next chapter" title="Create a sprint" close={() => ref.current?.close()} />
-        <Field label="Sprint name">
-          <input className={field} name="name" placeholder="e.g. Graph foundations" required />
-        </Field>
-        <Field label="Goal">
-          <textarea className={field} name="goal" placeholder="What will be different by the end?" rows={3} required />
-        </Field>
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-          <Field label="Starts">
-            <input className={field} name="startDate" type="date" defaultValue={todayKey()} required />
-          </Field>
-          <Field label="Ends">
-            <input className={field} name="endDate" type="date" required />
-          </Field>
-          <Field label="Planned minutes">
-            <input className={field} name="estimatedMinutes" type="number" min="0" defaultValue="0" />
-          </Field>
-        </div>
-        <Field label="Color">
-          <input
-            className="h-[42px] w-[58px] rounded-md border border-[#cfd8d4] bg-white p-1"
-            name="color"
-            type="color"
-            defaultValue="#2f6f65"
-          />
-        </Field>
-        {message && <p className="m-0 text-sm text-[#a63e26]">{message}</p>}
-        <button className={`${primaryButton} mt-1 w-full`} disabled={saving}>
-          {saving ? <LoaderCircle className="animate-spin" size={18} /> : <Plus size={18} />}{" "}
-          {saving ? "Creating..." : "Create sprint"}
-        </button>
-      </form>
-    </dialog>
-  );
-}
-
-function DialogHeader({ eyebrowText, title, close }: { eyebrowText: string; title: string; close: () => void }) {
-  return (
-    <div className="mb-1 flex items-start justify-between">
-      <div>
-        <span className={eyebrow}>{eyebrowText}</span>
-        <h2 className={heading}>{title}</h2>
-      </div>
-      <button type="button" className={iconButton} onClick={close} aria-label="Close">
-        <X />
-      </button>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="grid gap-2 text-xs font-extrabold text-[#182522]">
-      {label}
-      {children}
-    </label>
-  );
-}
-
-function EmptyState({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="flex min-h-[180px] flex-col items-center justify-center text-center text-[#64716d]">
-      <CirclePlus className="mb-2.5 text-[#aab7b3]" />
-      <strong className="text-[#182522]">{title}</strong>
-      <span className="mt-1 text-xs">{text}</span>
-    </div>
-  );
-}
-function LoadingState() {
-  return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center text-[#64716d]">
-      <LoaderCircle className="animate-spin" />
-      <p>Loading your plan...</p>
-    </div>
-  );
-}
-function ErrorState({ message, retry }: { message: string; retry: () => void }) {
-  return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center text-[#64716d]">
-      <strong className="font-[family-name:var(--font-display)] text-2xl text-[#182522]">
-        Could not reach your workspace
-      </strong>
-      <p className="mb-3">{message}</p>
-      <button className={secondaryButton} onClick={retry}>
-        <RefreshCw size={17} /> Try again
-      </button>
+    <div className="mb-3 flex items-center text-sm text-[#5f687a]">
+      <span>{label}</span>
+      <strong className="ml-auto text-[#20232d]">{value}</strong>
     </div>
   );
 }

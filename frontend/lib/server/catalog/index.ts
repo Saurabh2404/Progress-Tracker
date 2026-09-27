@@ -1,0 +1,19 @@
+import { sprintOneDayOne } from "./sprint1Day1";
+import { sprintOneDayTwo } from "./sprint1Day2";
+
+export { sprintOneDayTwo } from "./sprint1Day2";
+export { sprintSeeds } from "./sprints";
+import { sprintOneDay3 } from "./sprint1Day3";
+import { sprintOneDay4 } from "./sprint1Day4";
+import { sprintOneDay5 } from "./sprint1Day5";
+import { sprintOneDay6 } from "./sprint1Day6";
+import { sprintOneDay7 } from "./sprint1Day7";
+export const taskSeeds = [
+  ...sprintOneDayOne,
+  ...sprintOneDayTwo,
+  ...sprintOneDay3,
+  ...sprintOneDay4,
+  ...sprintOneDay5,
+  ...sprintOneDay6,
+  ...sprintOneDay7,
+];

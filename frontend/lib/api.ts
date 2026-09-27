@@ -1,6 +1,6 @@
 import type { Sprint, Task } from "./types";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+const baseUrl = "/api";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${baseUrl}${path}`, {
@@ -16,7 +16,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  eventsUrl: `${baseUrl}/events`,
   getSprints: () => request<Sprint[]>("/sprints"),
   createSprint: (payload: Omit<Sprint, "_id" | "taskCount" | "completedCount">) =>
     request<Sprint>("/sprints", { method: "POST", body: JSON.stringify(payload) }),

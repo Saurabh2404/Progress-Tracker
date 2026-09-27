@@ -6,6 +6,7 @@ export type Sprint = {
   endDate: string;
   color: string;
   estimatedMinutes?: number;
+  dayEstimates?: number[];
   timeSpentSeconds?: number;
   taskCount: number;
   completedCount: number;
